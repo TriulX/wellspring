@@ -1271,16 +1271,48 @@ function sessionFinish(){
   sessionComplete(true);
 }
 
-// Page Visibility API
+// Alarm sound using Web Audio API
+let alarmAudioCtx=null;
+function playAlarm(){
+  try{
+    if(!alarmAudioCtx) alarmAudioCtx=new(window.AudioContext||window.webkitAudioContext)();
+    const ctx=alarmAudioCtx;
+    const now=ctx.currentTime;
+    // Play 3 short beeps
+    [0, 0.18, 0.36].forEach(offset=>{
+      const osc=ctx.createOscillator();
+      const gain=ctx.createGain();
+      osc.type='square';
+      osc.frequency.setValueAtTime(880,now+offset);
+      osc.frequency.setValueAtTime(660,now+offset+0.06);
+      gain.gain.setValueAtTime(0.25,now+offset);
+      gain.gain.exponentialRampToValueAtTime(0.01,now+offset+0.12);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now+offset);
+      osc.stop(now+offset+0.12);
+    });
+  }catch(e){}
+}
+
+// Tab-switch detection (debounced so blur+visibilitychange count as one)
+let _switchDebounce=false;
+function recordSwitch(msg){
+  if(_switchDebounce) return;
+  _switchDebounce=true;
+  setTimeout(()=>{ _switchDebounce=false; },200);
+  switches++;
+  document.getElementById('swCount').textContent=switches;
+  document.getElementById('swPlural').textContent=switches===1?'':'es';
+  document.getElementById('fDot').classList.add('lost');
+  document.getElementById('fStatus').textContent=msg;
+  document.getElementById('fAlert').classList.add('show');
+  playAlarm();
+  sessionSave();
+}
 document.addEventListener('visibilitychange',()=>{
   if(document.hidden && tStarted && !tDone){
-    switches++;
-    document.getElementById('swCount').textContent=switches;
-    document.getElementById('swPlural').textContent=switches===1?'':'es';
-    document.getElementById('fDot').classList.add('lost');
-    document.getElementById('fStatus').textContent='Focus lost!';
-    document.getElementById('fAlert').classList.add('show');
-    sessionSave();
+    recordSwitch('Focus lost!');
   } else if(!document.hidden && tStarted && !tDone){
     document.getElementById('fDot').classList.remove('lost');
     if(tRunning) document.getElementById('fStatus').textContent='Focusing…';
@@ -1288,13 +1320,8 @@ document.addEventListener('visibilitychange',()=>{
 });
 window.addEventListener('blur',()=>{
   if(tStarted && !tDone && !document.hidden){
-    switches++;
-    document.getElementById('swCount').textContent=switches;
-    document.getElementById('swPlural').textContent=switches===1?'':'es';
     showToast('⚠️ Focus lost — you left the window!');
-    document.getElementById('fDot').classList.add('lost');
-    document.getElementById('fStatus').textContent='Window left';
-    sessionSave();
+    recordSwitch('Window left');
   }
 });
 window.addEventListener('focus',()=>{
