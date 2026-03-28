@@ -1,0 +1,1432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Wellspring — Focus & Wellness Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════════════════════
+   WELLSPRING — Complete Single-File App
+   Theme: Dark organic · deep forest · gold accents
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  --bg:         #0c0f0b;
+  --bg2:        #111410;
+  --surface:    #181c16;
+  --surface2:   #1f241c;
+  --border:     #2a3026;
+  --border-lt:  #38403200;
+
+  --ink:        #eae6d8;
+  --ink-muted:  #888e7a;
+  --ink-dim:    #4a5042;
+
+  --gold:       #c8a44a;
+  --gold-lt:    #e6d09a;
+  --gold-dim:   #6e5828;
+
+  --green:      #486e52;
+  --green-lt:   #7ab88a;
+  --green-dim:  #1e3424;
+
+  --red:        #a04838;
+  --red-lt:     #f0b0a0;
+  --red-dim:    #381410;
+
+  --r:  13px;
+  --rs: 8px;
+  --sh: 0 8px 40px rgba(0,0,0,.6);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+
+body {
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  min-height:100vh;
+  -webkit-font-smoothing:antialiased;
+  overflow-x:hidden;
+}
+
+/* ── Animated background ── */
+#bg-canvas {
+  position:fixed;inset:0;
+  pointer-events:none;z-index:0;
+  overflow:hidden;
+}
+.bg-orb {
+  position:absolute;
+  border-radius:50%;
+  filter:blur(80px);
+  opacity:.18;
+  animation:orbDrift var(--dur,20s) ease-in-out infinite alternate;
+}
+.bg-orb-1{width:500px;height:500px;background:var(--green);top:-150px;left:-150px;--dur:18s;}
+.bg-orb-2{width:400px;height:400px;background:var(--gold);bottom:-100px;right:-100px;--dur:23s;opacity:.1;}
+.bg-orb-3{width:300px;height:300px;background:#4a6080;bottom:30%;left:40%;--dur:28s;opacity:.08;}
+@keyframes orbDrift{
+  from{transform:translate(0,0) scale(1);}
+  to{transform:translate(50px,40px) scale(1.12);}
+}
+
+/* ── Grain overlay ── */
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:1;opacity:.4;
+}
+
+/* ════════════════════════════════
+   NAVIGATION
+   ════════════════════════════════ */
+nav {
+  position:fixed;top:0;left:0;right:0;height:54px;
+  background:rgba(12,15,11,.85);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;
+  padding:0 20px;gap:14px;
+  z-index:100;
+}
+.nav-brand {
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.3rem;font-weight:400;
+  color:var(--gold-lt);letter-spacing:.4px;
+  display:flex;align-items:center;gap:8px;
+  cursor:pointer;border:none;background:none;
+  font-family:'Cormorant Garamond',serif;
+}
+.nav-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--green-lt);
+  animation:pulse 3s ease-in-out infinite;
+  flex-shrink:0;
+}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.4;transform:scale(1.5);}}
+
+.nav-steps{margin-left:auto;display:flex;gap:5px;}
+.nav-step{
+  width:26px;height:3px;border-radius:99px;
+  background:var(--border);
+  transition:background .4s;
+}
+.nav-step.done  {background:var(--green);}
+.nav-step.active{background:var(--gold);}
+
+/* ════════════════════════════════
+   PAGE SYSTEM
+   ════════════════════════════════ */
+.page{
+  display:none;
+  position:relative;z-index:2;
+  min-height:100vh;
+  flex-direction:column;
+  align-items:center;
+  padding:74px 16px 80px;
+}
+.page.active{display:flex;}
+
+/* Page transitions */
+.page-enter{animation:pageIn .45s cubic-bezier(.4,0,.2,1) both;}
+@keyframes pageIn{
+  from{opacity:0;transform:translateY(22px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* ── Card ── */
+.card{
+  background:var(--surface);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:var(--r);
+  box-shadow:var(--sh);
+  padding:34px 38px;
+  width:100%;max-width:580px;
+}
+@media(max-width:500px){.card{padding:22px 18px;}}
+
+/* ── Section label ── */
+.slabel{
+  font-size:.65rem;font-weight:600;
+  letter-spacing:1.8px;text-transform:uppercase;
+  color:var(--gold);
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:18px;
+}
+.slabel::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.07);}
+
+/* ── Typography ── */
+.display{
+  font-family:'Cormorant Garamond',serif;
+  font-weight:300;line-height:1.1;
+}
+.display em{font-style:italic;color:var(--gold-lt);}
+.display strong{font-weight:600;color:var(--green-lt);}
+.muted{color:var(--ink-muted);}
+.small{font-size:.82rem;}
+.center{text-align:center;}
+
+/* ── Divider ── */
+.div{height:1px;background:rgba(255,255,255,.06);margin:24px 0;}
+
+/* ── Stagger animations ── */
+.s1{animation:fadeUp .5s .05s both;}
+.s2{animation:fadeUp .5s .15s both;}
+.s3{animation:fadeUp .5s .25s both;}
+.s4{animation:fadeUp .5s .35s both;}
+.s5{animation:fadeUp .5s .45s both;}
+.s6{animation:fadeUp .5s .55s both;}
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(18px);}
+  to{opacity:1;transform:translateY(0);}
+}
+
+/* ════════════════════════════════
+   FORM ELEMENTS
+   ════════════════════════════════ */
+.q{margin-bottom:24px;}
+.qlabel{
+  display:block;font-weight:500;font-size:.91rem;
+  margin-bottom:6px;
+}
+.qlabel .hint{
+  display:block;font-weight:300;font-size:.76rem;
+  color:var(--ink-muted);margin-top:2px;
+}
+
+/* Slider */
+.srow{display:flex;align-items:center;gap:12px;margin-top:6px;}
+input[type=range]{
+  -webkit-appearance:none;flex:1;height:4px;
+  border-radius:99px;background:rgba(255,255,255,.1);
+  outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:18px;height:18px;
+  border-radius:50%;background:var(--gold);
+  box-shadow:0 2px 8px rgba(200,164,74,.5);
+  transition:transform .15s;
+}
+input[type=range]:active::-webkit-slider-thumb{transform:scale(1.3);}
+input[type=range]::-moz-range-thumb{
+  width:18px;height:18px;border-radius:50%;
+  background:var(--gold);border:none;
+}
+.sval{
+  min-width:52px;text-align:right;
+  font-variant-numeric:tabular-nums;
+  font-size:.9rem;font-weight:600;
+  color:var(--gold-lt);
+}
+
+/* Select */
+select{
+  width:100%;padding:10px 14px;
+  border:1.5px solid rgba(255,255,255,.1);
+  border-radius:var(--rs);
+  background:var(--surface2);
+  font-family:'DM Sans',sans-serif;
+  font-size:.9rem;color:var(--ink);
+  appearance:none;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='7'%3E%3Cpath d='M1 1l4.5 4.5L10 1' stroke='%23888e7a' stroke-width='1.4' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;
+  cursor:pointer;transition:border-color .2s;margin-top:6px;
+}
+select:focus{outline:none;border-color:var(--gold);}
+select option{background:var(--surface2);}
+
+/* Toggle buttons */
+.trow{display:flex;gap:7px;margin-top:6px;}
+.tbtn{
+  flex:1;padding:9px 7px;
+  border:1.5px solid rgba(255,255,255,.1);
+  border-radius:var(--rs);background:transparent;
+  font-family:'DM Sans',sans-serif;font-size:.86rem;
+  font-weight:500;color:var(--ink-muted);
+  cursor:pointer;transition:all .18s;
+}
+.tbtn:hover{border-color:var(--gold-dim);color:var(--gold-lt);}
+.tbtn.on {background:var(--gold-dim);border-color:var(--gold);color:var(--gold-lt);}
+.tbtn.on-g{background:var(--green-dim);border-color:var(--green-lt);color:var(--green-lt);}
+
+/* ── Buttons ── */
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  gap:8px;padding:12px 26px;border:none;
+  border-radius:var(--rs);
+  font-family:'DM Sans',sans-serif;font-size:.93rem;
+  font-weight:600;letter-spacing:.2px;cursor:pointer;
+  transition:transform .15s,box-shadow .15s,background .15s,opacity .15s;
+  text-decoration:none;
+}
+.btn-p{background:var(--gold);color:#0c0f0b;box-shadow:0 4px 20px rgba(200,164,74,.28);}
+.btn-p:hover{background:var(--gold-lt);transform:translateY(-2px);box-shadow:0 8px 28px rgba(200,164,74,.38);}
+.btn-g{background:var(--green);color:#fff;box-shadow:0 4px 20px rgba(72,110,82,.28);}
+.btn-g:hover{background:var(--green-lt);transform:translateY(-2px);}
+.btn-gh{background:transparent;border:1.5px solid rgba(255,255,255,.14);color:var(--ink-muted);}
+.btn-gh:hover{border-color:rgba(255,255,255,.3);color:var(--ink);}
+.btn:active{transform:translateY(0)!important;}
+.btn-w{width:100%;}
+
+/* ════════════════════════════════
+   PAGE 1 — LANDING
+   ════════════════════════════════ */
+.hero{
+  text-align:center;
+  display:flex;flex-direction:column;
+  align-items:center;
+  padding-top:20px;
+}
+.hero-title{
+  font-size:clamp(3.8rem,11vw,6.5rem);
+  margin-bottom:6px;
+}
+.hero-tag{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;
+  font-size:clamp(1.1rem,3vw,1.5rem);
+  color:var(--ink-muted);margin-bottom:40px;
+}
+.feat-pills{
+  display:flex;flex-wrap:wrap;gap:8px;
+  justify-content:center;
+  margin:40px 0;max-width:500px;
+}
+.pill{
+  display:flex;align-items:center;gap:7px;
+  padding:7px 15px;
+  background:var(--surface);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:99px;font-size:.79rem;
+  color:var(--ink-muted);
+}
+.steps-g{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:10px;width:100%;max-width:500px;
+}
+@media(max-width:380px){.steps-g{grid-template-columns:1fr;}}
+.step-c{
+  background:var(--surface);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:var(--r);
+  padding:18px 16px;
+  position:relative;overflow:hidden;
+}
+.step-c::before{
+  content:attr(data-n);
+  position:absolute;top:-8px;right:10px;
+  font-family:'Cormorant Garamond',serif;
+  font-size:3.8rem;font-weight:600;
+  color:rgba(255,255,255,.05);line-height:1;
+}
+.step-icon{font-size:1.3rem;display:block;margin-bottom:8px;}
+.step-t{font-weight:600;font-size:.85rem;margin-bottom:3px;}
+.step-d{font-size:.76rem;color:var(--ink-muted);line-height:1.5;}
+
+/* Return banner */
+.ret-banner{
+  width:100%;max-width:500px;
+  margin-bottom:22px;
+  background:var(--green-dim);
+  border:1px solid var(--green);
+  border-radius:var(--r);
+  padding:14px 18px;
+  display:none;align-items:center;
+  justify-content:space-between;gap:12px;
+}
+.ret-banner.show{display:flex;}
+.rb-t{font-size:.86rem;color:var(--green-lt);}
+.rb-t strong{display:block;font-size:.92rem;margin-bottom:1px;}
+
+/* ════════════════════════════════
+   PAGE 2 — FORM
+   ════════════════════════════════ */
+.live-bar{
+  position:sticky;top:54px;z-index:50;
+  background:rgba(12,15,11,.9);
+  backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border);
+  padding:9px 18px;
+  display:flex;align-items:center;gap:12px;
+  width:100%;margin-bottom:20px;
+  margin-left:calc(-50vw + 50%);
+  width:100vw;
+}
+.lb-label{
+  font-size:.68rem;letter-spacing:1.2px;
+  text-transform:uppercase;color:var(--ink-muted);
+  white-space:nowrap;
+}
+.lb-track{
+  flex:1;height:5px;
+  background:rgba(255,255,255,.08);
+  border-radius:99px;overflow:hidden;
+}
+.lb-fill{
+  height:100%;border-radius:99px;
+  background:linear-gradient(90deg,var(--green),var(--gold));
+  transition:width .4s ease;width:0%;
+}
+.lb-num{
+  font-variant-numeric:tabular-nums;
+  font-weight:600;font-size:.88rem;
+  color:var(--gold-lt);min-width:38px;text-align:right;
+}
+
+/* ════════════════════════════════
+   PAGE 3 — FOCUS
+   ════════════════════════════════ */
+.timer-wrap{
+  position:relative;
+  width:220px;height:220px;
+  margin:0 auto 22px;
+}
+.timer-wrap svg{transform:rotate(-90deg);}
+.t-bg{fill:none;stroke:rgba(255,255,255,.07);stroke-width:7;}
+.t-fill{
+  fill:none;stroke:var(--gold);stroke-width:7;
+  stroke-linecap:round;
+  stroke-dasharray:628;stroke-dashoffset:0;
+  transition:stroke-dashoffset 1s linear,stroke .3s;
+}
+.t-fill.warn{stroke:var(--red);}
+.t-center{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:4px;
+}
+.t-num{
+  font-family:'Cormorant Garamond',serif;
+  font-size:4.2rem;font-weight:300;
+  color:var(--gold-lt);letter-spacing:4px;line-height:1;
+  transition:color .3s;
+}
+.t-num.warn{color:var(--red-lt);}
+.focus-st{
+  display:flex;align-items:center;gap:7px;
+  justify-content:center;font-size:.8rem;color:var(--ink-muted);
+}
+.f-dot{
+  width:7px;height:7px;border-radius:50%;
+  background:var(--green-lt);
+  animation:pulse 2s ease-in-out infinite;
+}
+.f-dot.lost{background:var(--red);animation:none;}
+
+.tab-c{
+  display:flex;align-items:center;justify-content:center;
+  gap:12px;padding:14px;
+  background:var(--surface2);
+  border-radius:var(--r);
+  border:1px solid rgba(255,255,255,.07);
+  margin-bottom:14px;
+}
+.tc-n{
+  font-family:'Cormorant Garamond',serif;
+  font-size:2.6rem;color:var(--red-lt);line-height:1;
+  transition:color .3s;
+}
+.tc-l{font-size:.78rem;color:var(--ink-muted);line-height:1.4;}
+
+.task-card{
+  background:var(--surface);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:var(--r);padding:18px 22px;
+  margin-bottom:14px;
+}
+.task-prompt{
+  font-family:'Cormorant Garamond',serif;
+  font-style:italic;font-size:1rem;
+  color:var(--ink-muted);margin-bottom:8px;
+}
+.task-in{
+  width:100%;
+  background:var(--surface2);
+  border:1.5px solid rgba(255,255,255,.09);
+  border-radius:var(--rs);
+  padding:9px 13px;
+  font-family:'DM Sans',sans-serif;font-size:.9rem;
+  color:var(--ink);resize:none;min-height:54px;
+  transition:border-color .2s;
+}
+.task-in:focus{outline:none;border-color:var(--gold-dim);}
+.task-in::placeholder{color:var(--ink-dim);}
+
+.ctrl-row{
+  display:flex;gap:9px;justify-content:center;
+  flex-wrap:wrap;margin-top:18px;
+}
+
+/* Focus alert overlay */
+.f-alert{
+  position:fixed;inset:0;
+  background:rgba(8,6,4,.88);
+  backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;
+  z-index:400;opacity:0;pointer-events:none;
+  transition:opacity .3s;
+}
+.f-alert.show{opacity:1;pointer-events:auto;}
+.alert-box{
+  background:var(--surface);
+  border:1px solid var(--red);
+  border-radius:var(--r);
+  padding:34px 38px;text-align:center;
+  max-width:340px;width:90%;
+  transform:scale(.94);transition:transform .3s;
+}
+.f-alert.show .alert-box{transform:scale(1);}
+.alert-icon{font-size:2.4rem;display:block;margin-bottom:10px;}
+.alert-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.7rem;color:var(--red-lt);margin-bottom:8px;
+}
+.alert-body{
+  font-size:.86rem;color:var(--ink-muted);
+  margin-bottom:22px;line-height:1.6;
+}
+
+/* Complete badge */
+.done-badge{
+  display:none;flex-direction:column;align-items:center;gap:6px;
+  padding:16px 22px;margin-bottom:14px;
+  background:var(--green-dim);
+  border:1px solid var(--green);
+  border-radius:var(--r);text-align:center;
+}
+.done-badge.show{display:flex;}
+.db-icon{font-size:2rem;}
+.db-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.4rem;color:var(--green-lt);
+}
+.db-sub{font-size:.8rem;color:var(--ink-muted);}
+
+/* Toast */
+.toast{
+  position:fixed;
+  top:66px;left:50%;
+  transform:translateX(-50%) translateY(-8px);
+  background:var(--red-dim);
+  border:1px solid var(--red);color:var(--red-lt);
+  padding:10px 22px;border-radius:99px;
+  font-size:.84rem;font-weight:500;
+  opacity:0;transition:opacity .3s,transform .3s;
+  z-index:300;white-space:nowrap;pointer-events:none;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+/* ════════════════════════════════
+   PAGE 4 — RESULTS
+   ════════════════════════════════ */
+.grade-banner{
+  display:flex;align-items:center;gap:18px;
+  padding:20px 24px;margin-bottom:14px;
+  background:var(--surface);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:var(--r);
+  box-shadow:var(--sh);
+}
+.gb-emoji{font-size:2rem;flex-shrink:0;}
+.gb-lbl{
+  font-size:.64rem;font-weight:600;
+  letter-spacing:1.5px;text-transform:uppercase;
+  color:var(--ink-dim);margin-bottom:3px;
+}
+.gb-grade{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.6rem;line-height:1;
+}
+.gb-sub{font-size:.78rem;color:var(--ink-muted);margin-top:3px;}
+
+/* Score ring */
+.ring-wrap{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:20px;}
+.s-ring{position:relative;width:150px;height:150px;}
+.s-ring svg{transform:rotate(-90deg);}
+.ring-bg2{fill:none;stroke:rgba(255,255,255,.07);stroke-width:9;}
+.ring-fill2{
+  fill:none;stroke-width:9;stroke-linecap:round;
+  stroke-dasharray:376;stroke-dashoffset:376;
+  transition:stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1);
+}
+.ring-center{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;
+  align-items:center;justify-content:center;
+}
+.rn{
+  font-family:'Cormorant Garamond',serif;
+  font-size:2.6rem;font-weight:600;
+  color:var(--gold-lt);line-height:1;
+}
+.rs2{font-size:.68rem;color:var(--ink-muted);letter-spacing:.5px;text-transform:uppercase;}
+
+/* Mini score cards */
+.mini-g{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:9px;margin-bottom:14px;
+}
+@media(max-width:380px){.mini-g{grid-template-columns:1fr 1fr;}}
+.mc{
+  background:var(--surface2);
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:var(--rs);
+  padding:14px 10px;text-align:center;
+}
+.mc-i{font-size:1.2rem;display:block;margin-bottom:5px;}
+.mc-l{
+  font-size:.62rem;font-weight:600;
+  letter-spacing:1px;text-transform:uppercase;
+  color:var(--ink-muted);margin-bottom:3px;
+}
+.mc-v{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.9rem;color:var(--gold-lt);line-height:1;
+}
+
+/* Session / input rows */
+.srow2{
+  display:flex;align-items:center;gap:10px;
+  padding:11px 0;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  font-size:.87rem;
+}
+.srow2:last-child{border-bottom:none;}
+.sri{font-size:1.2rem;flex-shrink:0;}
+.srt{flex:1;}
+.srn{font-weight:500;font-size:.86rem;margin-bottom:1px;}
+.srv{font-size:.76rem;color:var(--ink-muted);}
+.badge{
+  padding:3px 10px;border-radius:99px;
+  font-size:.73rem;font-weight:600;white-space:nowrap;
+}
+.bgg{background:var(--green-dim);color:var(--green-lt);}
+.bgw{background:var(--gold-dim);color:var(--gold-lt);}
+.bgb{background:var(--red-dim);color:var(--red-lt);}
+
+/* Tips */
+.tips-ul{list-style:none;}
+.tips-ul li{
+  display:flex;align-items:flex-start;gap:11px;
+  padding:11px 0;
+  border-bottom:1px solid rgba(255,255,255,.05);
+  font-size:.87rem;line-height:1.5;
+  animation:fadeUp .4s ease both;
+}
+.tips-ul li:last-child{border-bottom:none;}
+.ti{font-size:1.2rem;flex-shrink:0;margin-top:1px;}
+.tt strong{display:block;font-weight:600;font-size:.83rem;color:var(--gold-lt);margin-bottom:2px;}
+
+.task-disp{
+  background:var(--surface2);
+  border-left:3px solid var(--gold-dim);
+  border-radius:0 var(--rs) var(--rs) 0;
+  padding:10px 14px;
+  font-size:.86rem;color:var(--ink-muted);
+  font-style:italic;margin-top:10px;
+}
+
+.act-row{display:flex;gap:9px;flex-wrap:wrap;}
+.act-row .btn{flex:1;min-width:110px;font-size:.83rem;padding:10px 14px;}
+</style>
+</head>
+<body>
+
+<!-- Background -->
+<div id="bg-canvas">
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+</div>
+
+<!-- Navigation -->
+<nav>
+  <button class="nav-brand" onclick="goTo('home')">
+    <span class="nav-dot"></span>
+    Wellspring
+  </button>
+  <div class="nav-steps" id="navSteps">
+    <div class="nav-step active"></div>
+    <div class="nav-step"></div>
+    <div class="nav-step"></div>
+    <div class="nav-step"></div>
+  </div>
+</nav>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Focus alert -->
+<div class="f-alert" id="fAlert">
+  <div class="alert-box">
+    <span class="alert-icon">⚠️</span>
+    <div class="alert-title">Focus lost!</div>
+    <p class="alert-body">
+      You switched away from this tab. Each switch is logged in your session stats. Come back and stay focused for the best results.
+    </p>
+    <button class="btn btn-p" style="width:100%" onclick="dismissAlert()">I'm back — Resume →</button>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE 1 — HOME
+     ═══════════════════════════════════════════════════ -->
+<div class="page active" id="page-home">
+  <div class="hero">
+
+    <div class="ret-banner" id="retBanner">
+      <div class="rb-t">
+        <strong>Welcome back 👋</strong>
+        You have a previous session saved.
+      </div>
+      <button class="btn btn-g" style="padding:9px 16px;font-size:.82rem;white-space:nowrap" onclick="goTo('results')">View Results →</button>
+    </div>
+
+    <p class="small muted s1" style="letter-spacing:2px;text-transform:uppercase;font-size:.68rem;font-weight:600;color:var(--green-lt);margin-bottom:18px;">Daily Wellness Tracker</p>
+
+    <h1 class="display hero-title s2">Well<em>spring</em></h1>
+    <p class="hero-tag s3">Know your mind. Reclaim your focus.</p>
+
+    <div class="s4" style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+      <button class="btn btn-p" style="padding:15px 44px;font-size:1rem;border-radius:99px;" onclick="goTo('form')">
+        Begin Today's Check-in →
+      </button>
+      <span class="small muted" style="font-size:.76rem;">Takes ~60 seconds · Stays in your browser</span>
+    </div>
+
+    <div class="feat-pills s5">
+      <div class="pill">🧠 Concentration Score</div>
+      <div class="pill">⏱️ Focus Timer</div>
+      <div class="pill">👁️ Tab-switch Detection</div>
+      <div class="pill">💡 Personalised Tips</div>
+      <div class="pill">📊 Wellness Metrics</div>
+    </div>
+
+    <p class="small muted s6" style="margin-bottom:16px;letter-spacing:1.4px;text-transform:uppercase;font-size:.65rem;font-weight:600;color:var(--gold-dim);">How it works</p>
+    <div class="steps-g s6">
+      <div class="step-c" data-n="1">
+        <span class="step-icon">📋</span>
+        <div class="step-t">Answer 5 questions</div>
+        <p class="step-d">Sleep, hydration, screen time, exercise, mood.</p>
+      </div>
+      <div class="step-c" data-n="2">
+        <span class="step-icon">🎯</span>
+        <div class="step-t">Run a focus session</div>
+        <p class="step-d">25-min timer. Tab switches are tracked live.</p>
+      </div>
+      <div class="step-c" data-n="3">
+        <span class="step-icon">📈</span>
+        <div class="step-t">See your scores</div>
+        <p class="step-d">Concentration, mental, and physical wellness.</p>
+      </div>
+      <div class="step-c" data-n="4">
+        <span class="step-icon">🌿</span>
+        <div class="step-t">Get actionable tips</div>
+        <p class="step-d">Personalised to your specific answers.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE 2 — FORM
+     ═══════════════════════════════════════════════════ -->
+<div class="page" id="page-form">
+
+  <!-- Live score bar (sticky) -->
+  <div class="live-bar">
+    <span class="lb-label">Conc. Score</span>
+    <div class="lb-track"><div class="lb-fill" id="lbFill"></div></div>
+    <span class="lb-num" id="lbNum">—</span>
+  </div>
+
+  <div class="card s1">
+    <div class="slabel">Today's Check-in</div>
+    <h2 class="display s2" style="font-size:1.8rem;margin-bottom:4px;">How are you <em>really</em> doing?</h2>
+    <p class="small muted s2" style="margin-top:4px;margin-bottom:20px;">Answer honestly — your score is only as useful as your answers.</p>
+    <div class="div"></div>
+
+    <!-- Q1 Sleep -->
+    <div class="q s3">
+      <label class="qlabel">Hours of sleep last night
+        <span class="hint">Most adults need 7–9 hours for full cognitive recovery.</span>
+      </label>
+      <div class="srow">
+        <input type="range" id="fSleep" min="0" max="12" step=".5" value="7" oninput="fSlider('fSleep','fSleepV',v=>v+' hrs');updateLive()"/>
+        <span class="sval" id="fSleepV">7 hrs</span>
+      </div>
+    </div>
+
+    <!-- Q2 Screen -->
+    <div class="q s3">
+      <label class="qlabel">Screen time today (all devices)
+        <span class="hint">Phone + laptop + TV combined.</span>
+      </label>
+      <div class="srow">
+        <input type="range" id="fScreen" min="0" max="16" step=".5" value="4" oninput="fSlider('fScreen','fScreenV',v=>v+' hrs');updateLive()"/>
+        <span class="sval" id="fScreenV">4 hrs</span>
+      </div>
+    </div>
+
+    <!-- Q3 Water -->
+    <div class="q s4">
+      <label class="qlabel">Water intake today
+        <span class="hint">1 glass ≈ 250 ml / 8 oz</span>
+      </label>
+      <select id="fWater" onchange="updateLive()">
+        <option value="0">Less than 2 glasses</option>
+        <option value="1">2 – 4 glasses</option>
+        <option value="2" selected>4 – 6 glasses</option>
+        <option value="3">6 – 8 glasses</option>
+        <option value="4">8+ glasses 💧</option>
+      </select>
+    </div>
+
+    <!-- Q4 Exercise -->
+    <div class="q s4">
+      <label class="qlabel">Did you exercise today?</label>
+      <div class="trow" id="exRow"></div>
+      <input type="hidden" id="fEx" value="no"/>
+    </div>
+
+    <!-- Q5 Mood -->
+    <div class="q s5">
+      <label class="qlabel">How's your mood today?</label>
+      <div class="trow" id="moodRow"></div>
+      <input type="hidden" id="fMood" value="okay"/>
+    </div>
+
+    <div class="div"></div>
+    <button class="btn btn-p btn-w s5" onclick="submitForm()">
+      Calculate Score &amp; Start Focus Session →
+    </button>
+    <p class="center small muted" style="margin-top:10px;font-size:.74rem;">
+      Your data stays in your browser — never sent anywhere.
+    </p>
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE 3 — FOCUS
+     ═══════════════════════════════════════════════════ -->
+<div class="page" id="page-focus">
+  <div style="width:100%;max-width:520px;">
+
+    <div class="center s1" style="margin-bottom:22px;">
+      <div class="slabel" style="justify-content:center;margin-bottom:5px;">Focus Session</div>
+      <h2 class="display" style="font-size:1.8rem;"><em>Stay present.</em></h2>
+      <p class="small muted">25-min Pomodoro · every tab switch is tracked</p>
+    </div>
+
+    <!-- Done badge -->
+    <div class="done-badge" id="doneBadge">
+      <span class="db-icon">🏆</span>
+      <div class="db-title">Session Complete!</div>
+      <p class="db-sub" id="doneSub"></p>
+    </div>
+
+    <!-- Timer ring -->
+    <div class="timer-wrap s2">
+      <svg width="220" height="220" viewBox="0 0 220 220">
+        <circle class="t-bg" cx="110" cy="110" r="100"/>
+        <circle class="t-fill" id="tRing" cx="110" cy="110" r="100"/>
+      </svg>
+      <div class="t-center">
+        <div class="t-num" id="tDisp">25:00</div>
+        <div class="focus-st">
+          <div class="f-dot" id="fDot"></div>
+          <span id="fStatus">Ready to start</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab switch counter -->
+    <div class="tab-c s3">
+      <div class="tc-n" id="swCount">0</div>
+      <div class="tc-l">tab switch<span id="swPlural">es</span><br>
+        <span style="color:var(--ink-dim);font-size:.7rem;">detected this session</span>
+      </div>
+    </div>
+
+    <!-- Task input -->
+    <div class="task-card s4">
+      <p class="task-prompt">What are you focusing on? (optional)</p>
+      <textarea class="task-in" id="taskIn" placeholder="e.g. Write report, review emails, study chapter 3…" maxlength="200"></textarea>
+    </div>
+
+    <!-- Controls -->
+    <div class="ctrl-row s4">
+      <button class="btn btn-p" id="startBtn" onclick="timerStart()">▶ Start Session</button>
+      <button class="btn btn-gh" id="pauseBtn" style="display:none" onclick="timerPause()">⏸ Pause</button>
+      <button class="btn btn-gh" id="resetBtn" style="display:none" onclick="timerReset()">↺ Reset</button>
+    </div>
+
+    <div class="center s5" style="margin-top:18px;">
+      <button class="btn btn-gh" id="skipBtn" onclick="sessionFinish()" style="font-size:.8rem;padding:8px 18px;">
+        Skip to Results →
+      </button>
+      <p class="small muted" style="margin-top:8px;font-size:.74rem;">Stats save automatically when timer ends or you skip.</p>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     PAGE 4 — RESULTS
+     ═══════════════════════════════════════════════════ -->
+<div class="page" id="page-results">
+  <div style="width:100%;max-width:540px;">
+
+    <!-- Header -->
+    <div class="center s1" style="margin-bottom:20px;">
+      <div class="slabel" style="justify-content:center;margin-bottom:5px;">Session Results</div>
+      <h2 class="display" style="font-size:1.9rem;">Your <em>wellness</em> snapshot</h2>
+      <p class="small muted" id="rDate" style="margin-top:4px;"></p>
+    </div>
+
+    <!-- Grade banner -->
+    <div class="grade-banner s2" id="gradeBanner">
+      <div class="gb-emoji" id="gbEmoji">🌿</div>
+      <div>
+        <div class="gb-lbl">Concentration Grade</div>
+        <div class="gb-grade" id="gbGrade">—</div>
+        <div class="gb-sub" id="gbSub">—</div>
+      </div>
+    </div>
+
+    <!-- Score ring + minis -->
+    <div class="card s3" style="margin-bottom:12px;">
+      <div class="slabel">Wellness Scores</div>
+      <div class="ring-wrap">
+        <div class="s-ring">
+          <svg width="150" height="150" viewBox="0 0 150 150">
+            <circle class="ring-bg2" cx="75" cy="75" r="60"/>
+            <circle class="ring-fill2" id="mainRing" cx="75" cy="75" r="60"/>
+          </svg>
+          <div class="ring-center">
+            <span class="rn" id="rRingNum">0</span>
+            <span class="rs2">concentration</span>
+          </div>
+        </div>
+      </div>
+      <div class="mini-g">
+        <div class="mc"><span class="mc-i">🧠</span><div class="mc-l">Mental</div><div class="mc-v" id="rMental">—</div></div>
+        <div class="mc"><span class="mc-i">💪</span><div class="mc-l">Physical</div><div class="mc-v" id="rPhys">—</div></div>
+        <div class="mc"><span class="mc-i">⚡</span><div class="mc-l">Focus</div><div class="mc-v" id="rConc">—</div></div>
+      </div>
+    </div>
+
+    <!-- Session stats -->
+    <div class="card s4" style="margin-bottom:12px;">
+      <div class="slabel">Focus Session</div>
+      <div id="rSession"></div>
+      <div id="rTask" class="task-disp" style="display:none;"></div>
+    </div>
+
+    <!-- Input summary -->
+    <div class="card s4" style="margin-bottom:12px;">
+      <div class="slabel">Today's Inputs</div>
+      <div id="rInputs"></div>
+    </div>
+
+    <!-- Tips -->
+    <div class="card s5" style="margin-bottom:16px;">
+      <div class="slabel">Personalised Tips</div>
+      <ul class="tips-ul" id="rTips"></ul>
+    </div>
+
+    <!-- Actions -->
+    <div class="s6">
+      <div class="act-row" style="margin-bottom:9px;">
+        <button class="btn btn-p" onclick="goTo('form')">Redo Check-in ↺</button>
+        <button class="btn btn-g" onclick="goTo('focus')">New Focus Session ▶</button>
+      </div>
+      <div class="act-row">
+        <button class="btn btn-gh" onclick="clearAll()">Clear data &amp; restart</button>
+        <button class="btn btn-gh" onclick="window.print()">🖨 Print</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ═══════════════════════════════════════════════════
+     JAVASCRIPT
+     ═══════════════════════════════════════════════════ -->
+<script>
+/* ─────────────────────────────────────────────────
+   STORAGE
+───────────────────────────────────────────────── */
+const KEY = { FORM:'ws_form', SCORE:'ws_score', SESSION:'ws_sess' };
+const Store = {
+  save(k,v){ try{localStorage.setItem(k,JSON.stringify(v));}catch(e){} },
+  load(k)  { try{const r=localStorage.getItem(k);return r?JSON.parse(r):null;}catch(e){return null;} },
+  del(k)   { localStorage.removeItem(k); },
+  clear()  { Object.values(KEY).forEach(k=>localStorage.removeItem(k)); }
+};
+
+/* ─────────────────────────────────────────────────
+   ROUTING
+───────────────────────────────────────────────── */
+const PAGES  = ['home','form','focus','results'];
+const STEPS  = [0,1,2,3]; // maps pages to nav step index
+let curPage  = 'home';
+
+function goTo(name) {
+  if(!PAGES.includes(name)) return;
+
+  // teardown focus timer if leaving focus page
+  if(curPage==='focus' && name!=='focus') {
+    timerPause();
+  }
+
+  document.getElementById('page-'+curPage).classList.remove('active');
+  curPage = name;
+  const el = document.getElementById('page-'+name);
+  el.classList.add('active','page-enter');
+  setTimeout(()=>el.classList.remove('page-enter'), 500);
+
+  // Update nav steps
+  const idx   = PAGES.indexOf(name);
+  const steps = document.querySelectorAll('.nav-step');
+  steps.forEach((s,i)=>{
+    s.classList.remove('done','active');
+    if(i < idx)  s.classList.add('done');
+    if(i === idx) s.classList.add('active');
+  });
+
+  // Scroll to top
+  window.scrollTo({top:0,behavior:'instant'});
+
+  // Page-specific init
+  if(name==='home')    initHome();
+  if(name==='form')    initForm();
+  if(name==='results') initResults();
+}
+
+/* ─────────────────────────────────────────────────
+   TOAST
+───────────────────────────────────────────────── */
+function showToast(msg, dur=3200){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(()=>t.classList.remove('show'), dur);
+}
+
+/* ─────────────────────────────────────────────────
+   PAGE 1 — HOME INIT
+───────────────────────────────────────────────── */
+function initHome(){
+  const has = Store.load(KEY.SCORE);
+  const banner = document.getElementById('retBanner');
+  banner.classList.toggle('show', !!has);
+}
+
+/* ─────────────────────────────────────────────────
+   PAGE 2 — FORM
+───────────────────────────────────────────────── */
+function fSlider(inputId, valId, fmt){
+  const v = document.getElementById(inputId).value;
+  document.getElementById(valId).textContent = fmt(v);
+}
+
+// Toggle button groups
+function buildToggles(rowId, hiddenId, opts, cb){
+  const row = document.getElementById(rowId);
+  row.innerHTML = '';
+  opts.forEach(o=>{
+    const b = document.createElement('button');
+    b.type='button'; b.className='tbtn';
+    b.dataset.v = o.v; b.textContent = o.label;
+    if(o.def) b.classList.add(o.green?'on-g':'on');
+    b.addEventListener('click',()=>{
+      row.querySelectorAll('.tbtn').forEach(x=>x.classList.remove('on','on-g'));
+      b.classList.add(o.green?'on-g':'on');
+      document.getElementById(hiddenId).value = o.v;
+      if(cb) cb();
+    });
+    row.appendChild(b);
+  });
+}
+
+function initForm(){
+  buildToggles('exRow','fEx',[
+    {v:'yes',label:'✓ Yes',green:true},
+    {v:'no', label:'✕ No', def:true}
+  ], updateLive);
+
+  buildToggles('moodRow','fMood',[
+    {v:'good',label:'😊 Good',green:true},
+    {v:'okay',label:'😐 Okay',def:true},
+    {v:'bad', label:'😔 Bad'}
+  ], updateLive);
+
+  // Restore saved form values if any
+  const saved = Store.load(KEY.FORM);
+  if(saved){
+    if(saved.sleep  !== undefined) { document.getElementById('fSleep').value  = saved.sleep;  fSlider('fSleep','fSleepV',v=>v+' hrs'); }
+    if(saved.screen !== undefined) { document.getElementById('fScreen').value = saved.screen; fSlider('fScreen','fScreenV',v=>v+' hrs'); }
+    if(saved.water  !== undefined)   document.getElementById('fWater').value  = saved.water;
+  }
+  updateLive();
+}
+
+function getFormData(){
+  return {
+    sleep:    parseFloat(document.getElementById('fSleep').value),
+    screen:   parseFloat(document.getElementById('fScreen').value),
+    water:    parseInt(document.getElementById('fWater').value,10),
+    exercise: document.getElementById('fEx').value,
+    mood:     document.getElementById('fMood').value
+  };
+}
+
+function updateLive(){
+  const d = getFormData();
+  const s = scoreConc(d);
+  document.getElementById('lbFill').style.width = s+'%';
+  document.getElementById('lbNum').textContent  = s;
+}
+
+function submitForm(){
+  const fd = getFormData();
+  const sc = {
+    concentration: scoreConc(fd),
+    mental:        scoreMental(fd),
+    physical:      scorePhys(fd),
+    ts: Date.now()
+  };
+  Store.save(KEY.FORM, fd);
+  Store.save(KEY.SCORE, sc);
+  Store.del(KEY.SESSION);
+  goTo('focus');
+}
+
+/* ─────────────────────────────────────────────────
+   SCORING ENGINE
+───────────────────────────────────────────────── */
+function scoreConc({sleep,water,screen,mood,exercise}){
+  let p=0;
+  // Sleep 35
+  p += sleep>=8?35:sleep>=7?28:sleep>=6?18:sleep>=5?9:2;
+  // Water 20
+  p += Math.min(water*5,20);
+  // Screen 25
+  p += screen<=2?25:screen<=4?20:screen<=6?12:screen<=8?6:0;
+  // Mood 15
+  p += {good:15,okay:8,bad:2}[mood]??8;
+  // Exercise 5
+  if(exercise==='yes') p+=5;
+  return Math.min(Math.round(p),100);
+}
+function scoreMental({sleep,mood,water,screen}){
+  let p=0;
+  p += sleep>=8?40:sleep>=7?32:sleep>=6?20:sleep>=5?10:0;
+  p += {good:30,okay:15,bad:4}[mood]??15;
+  p += Math.min(water*4.5,18);
+  p += screen<=3?12:screen<=5?6:0;
+  return Math.min(Math.round(p),100);
+}
+function scorePhys({exercise,water,sleep}){
+  let p=0;
+  if(exercise==='yes') p+=50;
+  p += Math.min(water*7.5,30);
+  p += sleep>=8?20:sleep>=7?14:sleep>=6?8:sleep>=5?3:0;
+  return Math.min(Math.round(p),100);
+}
+function grade(s){
+  if(s>=85) return{label:'Excellent',color:'var(--green-lt)',emoji:'🌟'};
+  if(s>=70) return{label:'Good',     color:'var(--gold-lt)', emoji:'✅'};
+  if(s>=50) return{label:'Fair',     color:'var(--gold)',    emoji:'🌿'};
+  return          {label:'Needs work',color:'var(--red-lt)', emoji:'🔧'};
+}
+
+/* ─────────────────────────────────────────────────
+   TIPS BANK
+───────────────────────────────────────────────── */
+const TIPS=[
+  {i:'😴',t:'Prioritise sleep',b:'Aim for 7–9 hours. Sleep is when the brain consolidates memories and clears metabolic waste.',c:({sleep})=>sleep<7},
+  {i:'💧',t:'Hydrate now',b:'Even mild dehydration (1–2%) reduces cognitive performance. Drink a glass of water right now.',c:({water})=>water<2},
+  {i:'📵',t:'Reduce screen time',b:'High screen time strains working memory. Try the 20-20-20 rule: every 20 min, look 20 ft away for 20 sec.',c:({screen})=>screen>6},
+  {i:'🚶',t:'Take a 5-minute walk',b:'A short walk boosts BDNF, improving learning and memory within minutes.',c:({exercise})=>exercise!=='yes'},
+  {i:'🧘',t:'Try a short meditation',b:'Just 5–10 minutes of mindful breathing reduces cortisol and improves attention for 2–3 hours.',c:(_,{concentration})=>concentration<65},
+  {i:'🌿',t:'Step outside',b:'Nature exposure lowers cortisol and restores directed attention capacity.',c:({mood})=>mood==='bad'},
+  {i:'⏱️',t:'Try the Pomodoro method',b:'25 min focused work + 5 min break. Structure prevents mental fatigue and maintains peak performance.',c:(_,{concentration})=>concentration<80},
+  {i:'🌙',t:'Wind down early tonight',b:'Set a screen-off alarm 1 hour before bed. Blue light delays sleep onset by up to 90 minutes.',c:({screen})=>screen>4},
+  {i:'🥗',t:'Eat brain-supporting foods',b:'Omega-3s, blueberries, and leafy greens support neuroplasticity. Avoid heavy carbs before focus sessions.',c:()=>true},
+  {i:'🏆',t:"You're doing great!",b:'Your wellness inputs are strong today. Consistency compounds — keep the streak going.',c:(_,{concentration})=>concentration>=80},
+];
+function getTips(fd,sc,max=5){
+  return TIPS.filter(t=>t.c(fd,sc)).slice(0,max);
+}
+
+/* ─────────────────────────────────────────────────
+   PAGE 3 — FOCUS TIMER
+───────────────────────────────────────────────── */
+const TOTAL = 25*60;
+const CIRC  = 628; // 2π×100
+
+let tRemain   = TOTAL;
+let tInterval = null;
+let tRunning  = false;
+let tStarted  = false;
+let tDone     = false;
+let switches  = 0;
+
+function timerRender(){
+  const m = Math.floor(tRemain/60);
+  const s = tRemain%60;
+  const disp = document.getElementById('tDisp');
+  disp.textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  disp.classList.toggle('warn', tRemain<=300);
+
+  const ring = document.getElementById('tRing');
+  const pct  = tRemain/TOTAL;
+  ring.style.strokeDashoffset = CIRC-(CIRC*pct);
+  ring.classList.toggle('warn', tRemain<=300);
+  if(tRemain>300) ring.style.stroke='var(--gold)';
+  else ring.style.stroke='var(--red)';
+}
+
+function timerStart(){
+  if(tDone) return;
+  tStarted=true; tRunning=true;
+  document.getElementById('startBtn').style.display='none';
+  document.getElementById('pauseBtn').style.display='';
+  document.getElementById('resetBtn').style.display='';
+  document.getElementById('fDot').classList.remove('lost');
+  document.getElementById('fStatus').textContent='Focusing…';
+  tInterval=setInterval(()=>{ tRemain--; timerRender(); if(tRemain<=0) sessionComplete(); },1000);
+}
+function timerPause(){
+  tRunning=false;
+  clearInterval(tInterval);tInterval=null;
+  const pb=document.getElementById('pauseBtn');
+  pb.textContent='▶ Resume'; pb.onclick=timerResume;
+  document.getElementById('fStatus').textContent='Paused';
+}
+function timerResume(){
+  tRunning=true;
+  const pb=document.getElementById('pauseBtn');
+  pb.textContent='⏸ Pause'; pb.onclick=timerPause;
+  document.getElementById('fStatus').textContent='Focusing…';
+  tInterval=setInterval(()=>{ tRemain--; timerRender(); if(tRemain<=0) sessionComplete(); },1000);
+}
+function timerReset(){
+  clearInterval(tInterval);tInterval=null;
+  tRunning=false;tRemain=TOTAL;tStarted=false;
+  timerRender();
+  document.getElementById('startBtn').style.display='';
+  document.getElementById('pauseBtn').style.display='none';
+  document.getElementById('resetBtn').style.display='none';
+  const pb=document.getElementById('pauseBtn');
+  pb.textContent='⏸ Pause'; pb.onclick=timerPause;
+  document.getElementById('fStatus').textContent='Ready to start';
+  document.getElementById('fDot').classList.remove('lost');
+}
+
+function sessionSave(){
+  const elapsed = TOTAL-tRemain;
+  Store.save(KEY.SESSION,{
+    switches,
+    elapsed,
+    task: document.getElementById('taskIn').value.trim(),
+    completed: tRemain<=0,
+    ts: Date.now()
+  });
+}
+function sessionComplete(skipped=false){
+  clearInterval(tInterval);tInterval=null;
+  tRunning=false;tDone=true;
+  sessionSave();
+  document.getElementById('fDot').classList.remove('lost');
+  document.getElementById('fStatus').textContent = skipped?'Session ended':'Complete! 🎉';
+  document.getElementById('startBtn').style.display='none';
+  document.getElementById('pauseBtn').style.display='none';
+  document.getElementById('resetBtn').style.display='none';
+  const skip=document.getElementById('skipBtn');
+  skip.textContent='View My Results →';
+  skip.onclick=()=>goTo('results');
+  skip.classList.remove('btn-gh'); skip.classList.add('btn-p');
+  const badge=document.getElementById('doneBadge');
+  badge.classList.add('show');
+  const elapsed=Math.round((TOTAL-tRemain)/60);
+  document.getElementById('doneSub').textContent = skipped
+    ? `${elapsed} min focused · ${switches} tab switch${switches!==1?'es':''}`
+    : `Full 25-min session · ${switches} tab switch${switches!==1?'es':''}`;
+}
+function sessionFinish(){
+  if(!tStarted&&!tDone){ sessionSave(); goTo('results'); return; }
+  sessionComplete(true);
+}
+
+// Page Visibility API
+document.addEventListener('visibilitychange',()=>{
+  if(document.hidden && tStarted && !tDone){
+    switches++;
+    document.getElementById('swCount').textContent=switches;
+    document.getElementById('swPlural').textContent=switches===1?'':'es';
+    document.getElementById('fDot').classList.add('lost');
+    document.getElementById('fStatus').textContent='Focus lost!';
+    document.getElementById('fAlert').classList.add('show');
+    sessionSave();
+  } else if(!document.hidden && tStarted && !tDone){
+    document.getElementById('fDot').classList.remove('lost');
+    if(tRunning) document.getElementById('fStatus').textContent='Focusing…';
+  }
+});
+window.addEventListener('blur',()=>{
+  if(tStarted && !tDone && !document.hidden){
+    switches++;
+    document.getElementById('swCount').textContent=switches;
+    document.getElementById('swPlural').textContent=switches===1?'':'es';
+    showToast('⚠️ Focus lost — you left the window!');
+    document.getElementById('fDot').classList.add('lost');
+    document.getElementById('fStatus').textContent='Window left';
+    sessionSave();
+  }
+});
+window.addEventListener('focus',()=>{
+  if(tStarted && !tDone){
+    document.getElementById('fDot').classList.remove('lost');
+    if(tRunning) document.getElementById('fStatus').textContent='Focusing…';
+  }
+});
+function dismissAlert(){ document.getElementById('fAlert').classList.remove('show'); }
+
+// Space bar shortcut
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'&&e.target===document.body){
+    e.preventDefault();
+    if(curPage!=='focus') return;
+    if(!tStarted) timerStart();
+    else if(tRunning) timerPause();
+    else timerResume();
+  }
+});
+
+/* ─────────────────────────────────────────────────
+   PAGE 4 — RESULTS
+───────────────────────────────────────────────── */
+function initResults(){
+  const fd = Store.load(KEY.FORM);
+  const sc = Store.load(KEY.SCORE);
+  const ss = Store.load(KEY.SESSION);
+  if(!fd||!sc) { goTo('home'); return; }
+
+  // Date
+  document.getElementById('rDate').textContent =
+    new Date(sc.ts||Date.now()).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  // Grade banner
+  const g = grade(sc.concentration);
+  document.getElementById('gbEmoji').textContent = g.emoji;
+  document.getElementById('gbGrade').textContent = g.label;
+  document.getElementById('gbGrade').style.color = g.color;
+  document.getElementById('gbSub').textContent   = `Concentration score: ${sc.concentration}/100`;
+
+  // Animated ring
+  animRing('mainRing', sc.concentration, 'var(--gold)');
+  document.getElementById('rRingNum').textContent = 0;
+  animNum('rRingNum', sc.concentration);
+  document.getElementById('rMental').textContent = sc.mental;
+  document.getElementById('rPhys').textContent   = sc.physical;
+  document.getElementById('rConc').textContent   = sc.concentration;
+
+  // Session stats
+  const sw = ss?.switches??0;
+  const el = ss?.elapsed??0;
+  const mins= Math.floor(el/60), secs=el%60;
+  const done= ss?.completed??false;
+  const swClass = sw===0?'bgg':sw<=3?'bgw':'bgb';
+  const tClass  = done?'bgg':el>600?'bgw':'bgb';
+  document.getElementById('rSession').innerHTML=`
+    <div class="srow2">
+      <div class="sri">👁️</div>
+      <div class="srt"><div class="srn">Tab / window switches</div>
+        <div class="srv">${sw===0?'Stayed perfectly focused!':sw+' distraction'+(sw!==1?'s':'')+' detected'}</div>
+      </div>
+      <div class="badge ${swClass}">${sw}</div>
+    </div>
+    <div class="srow2">
+      <div class="sri">⏱️</div>
+      <div class="srt"><div class="srn">Time focused</div>
+        <div class="srv">${done?'Full 25-min session completed!':mins+'m '+secs+'s of 25:00'}</div>
+      </div>
+      <div class="badge ${tClass}">${done?'25:00':String(mins).padStart(2,'0')+':'+String(secs).padStart(2,'0')}</div>
+    </div>`;
+
+  if(ss?.task){ const td=document.getElementById('rTask'); td.style.display='block'; td.textContent='"'+ss.task+'"'; }
+  else document.getElementById('rTask').style.display='none';
+
+  // Inputs
+  const wL=['< 2 glasses','2–4 glasses','4–6 glasses','6–8 glasses','8+ glasses'];
+  const mL={good:'😊 Good',okay:'😐 Okay',bad:'😔 Bad'};
+  const rows=[
+    {i:'😴',n:'Sleep',      v:fd.sleep+' hours',    b:fd.sleep>=7?'bgg':fd.sleep>=5?'bgw':'bgb'},
+    {i:'📱',n:'Screen time',v:fd.screen+' hours',   b:fd.screen<=4?'bgg':fd.screen<=7?'bgw':'bgb'},
+    {i:'💧',n:'Hydration',  v:wL[fd.water]||'—',   b:fd.water>=3?'bgg':fd.water>=1?'bgw':'bgb'},
+    {i:'🏃',n:'Exercise',   v:fd.exercise==='yes'?'Yes ✓':'No', b:fd.exercise==='yes'?'bgg':'bgw'},
+    {i:'🙂',n:'Mood',       v:mL[fd.mood]||'—',    b:fd.mood==='good'?'bgg':fd.mood==='okay'?'bgw':'bgb'},
+  ];
+  document.getElementById('rInputs').innerHTML=rows.map(r=>`
+    <div class="srow2">
+      <div class="sri">${r.i}</div>
+      <div class="srt"><div class="srn">${r.n}</div></div>
+      <div class="badge ${r.b}">${r.v}</div>
+    </div>`).join('');
+
+  // Tips
+  const tips = getTips(fd, sc, 6);
+  document.getElementById('rTips').innerHTML = tips.map((t,i)=>`
+    <li style="animation-delay:${.1+i*.08}s">
+      <span class="ti">${t.i}</span>
+      <span class="tt"><strong>${t.t}</strong>${t.b}</span>
+    </li>`).join('');
+}
+
+function clearAll(){
+  if(confirm('Clear all session data and start fresh?')){ Store.clear(); goTo('home'); }
+}
+
+/* ─────────────────────────────────────────────────
+   ANIMATION HELPERS
+───────────────────────────────────────────────── */
+function animRing(id, score, color){
+  const c = document.getElementById(id);
+  if(!c) return;
+  c.style.stroke = color;
+  const circ = 376; // 2π×60
+  setTimeout(()=>{ c.style.strokeDashoffset = circ-(score/100)*circ; }, 80);
+}
+function animNum(id, target){
+  const el=document.getElementById(id);
+  if(!el) return;
+  let cur=0; const step=target/60;
+  const iv=setInterval(()=>{
+    cur=Math.min(cur+step,target);
+    el.textContent=Math.round(cur);
+    if(cur>=target) clearInterval(iv);
+  },16);
+}
+
+/* ─────────────────────────────────────────────────
+   INIT
+───────────────────────────────────────────────── */
+// Initial render
+timerRender();
+initHome();
+</script>
+</body>
+</html>
